@@ -1,0 +1,79 @@
+---
+title: "Growing Demand for Tennis Courts in Toronto"
+author: "Basil Wong"
+thanks: "Code and data are available at: https://github.com/basilwongg/TorTennisCourts"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+abstract: "This report aims to investigate the tennis courts that belong to the City of Toronto, with tennis becoming one of the leading sports in Canada and more people have turned into a frequent player, do we have enough tennis courts to accommodate all the players. It discusses the tennis court area, primary permitting status (club or public), lit or not and surface material. Then compare it to the growing demand to see if the distribuition and number of tennis courts satify the needs of the players in Toronto.
+  \\par
+  \\textbf {Keywords:} toronto tennis courts, toronto tennis clubs, parks and recreation, locations and mapping, open data toronto,  toronto residents"
+output: pdf_document
+toc: FALSE
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE, show_col_types = FALSE}
+library(haven)
+library(tidyverse)
+library(dplyr)
+library(janitor) 
+library(tidyr) 
+library(ggplot2)
+library(lubridate)
+library(gridExtra)
+library(scales)
+library(knitr)
+library(kableExtra)
+library(opendatatoronto)
+library(ggmap)
+```
+
+# Introduction
+
+In 2019, there was a recorded number of 6.5 million Canadians who hit the courts with a 36% increase in frequent tennis player since 2017 [@summary]. The amazing performance by Canadian tennis players such as Denis Shapovalov, Felix Auger-Aliassime & Leylah Annie Fernandez have influenced many Canadians, more and more poeple are starting to play tennis. With 50% of Canadians have played tennis in their lifetime [@summary], tennis has become one of the leading sports in Canada. 
+
+With the increasing number of Canadians starting to play tennis, we would like to know if the number of tennis courts provided by private clubs or the government are sufficient to accommodate all the players. In the winter, all the outdoor tennis courts will be covered in snow and no longer available for people to use them, however the number of indoor courts are very limited and most of them are operated by private clubs meaning that only people who paid the membership fees can use the facilities [@indoor]. Therefore there seems to be a huge demand in indoor tennis courts in order to keep the sport growing and examining the actual demand of indoor courts will be one of the focus of this report. The location of the tennis courts will also be a prime factors of how involved people are to this sport. We will examine whether all the tennis courts are packed in a certain area or they are evenly distributed across Toronto.
+
+The data section will include how to retrieve the data and the tools that will be used to analyse the dataset. The variables and features of the data will also be discussed under the data section. The model will indicate whether there is a directly relationship between the number of indoor courts and the number of frequent tennis players. Tables and graphs will be presented under results. Detailed findings and future actions will then be included in discussion part and the lastly the rest of the material will go under appendix. 
+
+# Data
+
+
+
+
+```{r, echo=FALSE, warning=FALSE, show_col_types = FALSE}
+# get package
+package <- show_package("409119c3-65d7-4688-bcb7-5f74f6fb8415")
+
+# get all resources for this package
+resources <- list_package_resources("409119c3-65d7-4688-bcb7-5f74f6fb8415")
+
+# identify datastore resources
+datastore_resources <- filter(resources, tolower(format) %in% c('xlsx', 'geojson'))
+
+# load the first datastore resource as a sample
+data <- filter(datastore_resources, row_number()==1) %>% get_resource()
+
+```
+
+```{r, echo=FALSE, warning=FALSE, show_col_types = FALSE}
+bbox_toronto <-
+  c(left = -79.639,
+    bottom = 43.5802,
+    right = -79.1132,
+    top = 43.8)
+
+toronto_stamen_map <-
+  get_stamenmap(bbox_toronto,maptype = "toner-lite")
+
+ggmap(toronto_stamen_map)
+```
+
+# Model
+
+# Results
+
+# Discussion
+
+# Appendix
+
+# Reference
