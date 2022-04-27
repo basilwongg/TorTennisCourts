@@ -1,7 +1,7 @@
 ---
 title: "Growing Demand for Tennis Courts in Toronto"
 author: "Basil Wong"
-thanks: "Code and data are available at: https://github.com/basilwongg/TorTennisCourts"
+thanks: 'Code and data are available at: https://github.com/basilwongg/TorTennisCourts'
 date: "`r format(Sys.time(), '%d %B %Y')`"
 abstract: "This report aims to investigate the tennis courts that belong to the City of Toronto, with tennis becoming one of the leading sports in Canada and more people have turned into a frequent player, do we have enough tennis courts to accommodate all the players. It discusses the tennis court area, primary permitting status (club or public), lit or not and surface material. Then compare it to the growing demand to see if the distribuition and number of tennis courts satify the needs of the players in Toronto.
   \\par
@@ -25,20 +25,24 @@ library(knitr)
 library(kableExtra)
 library(opendatatoronto)
 library(ggmap)
+library(ggthemes)
 ```
 
 # Introduction
 
-In 2019, there was a recorded number of 6.5 million Canadians who hit the courts with a 36% increase in frequent tennis player since 2017 [@summary]. The amazing performance by Canadian tennis players such as Denis Shapovalov, Felix Auger-Aliassime & Leylah Annie Fernandez have influenced many Canadians, more and more poeple are starting to play tennis. With 50% of Canadians have played tennis in their lifetime [@summary], tennis has become one of the leading sports in Canada. 
+In 2019, there was a recorded number of 6.5 million Canadians who hit the courts with a 36% increase in frequent tennis player since 2017 [@summary]. The amazing performance by Canadian tennis players such as Denis Shapovalov, Felix Auger-Aliassime & Leylah Annie Fernandez have influenced many Canadians, more and more people are starting to play tennis. With 50% of Canadians have played tennis in their lifetime [@summary], tennis has become one of the leading sports in Canada. I have always been a huge fan of tennis and I have bee playing tennis for more than 12 years. Ever since I got into university, I have tried to book a tennis court from the university varsity portal but then realized that it was extremely difficult to book one. Therefore I decided to look for public courts and surprisingly I could not find any public courts near me, so I started thinking about what the experience is for people in Toronto trying to find a public tennis court? Are the courts in good condition?
 
-With the increasing number of Canadians starting to play tennis, we would like to know if the number of tennis courts provided by private clubs or the government are sufficient to accommodate all the players. In the winter, all the outdoor tennis courts will be covered in snow and no longer available for people to use them, however the number of indoor courts are very limited and most of them are operated by private clubs meaning that only people who paid the membership fees can use the facilities [@indoor]. Therefore there seems to be a huge demand in indoor tennis courts in order to keep the sport growing and examining the actual demand of indoor courts will be one of the focus of this report. The location of the tennis courts will also be a prime factors of how involved people are to this sport. We will examine whether all the tennis courts are packed in a certain area or they are evenly distributed across Toronto.
+Hence with the increasing number of Canadians starting to play tennis, we would like to know if the number of tennis courts provided by private clubs or the government are sufficient to accommodate all the players. In the winter, all the outdoor tennis courts will be covered in snow and no longer available for people to use them, however the number of indoor courts are very limited and most of them are operated by private clubs meaning that only people who paid the membership fees can use the facilities [@indoor]. Therefore there seems to be a huge demand in indoor tennis courts in order to keep the sport growing and examining the actual demand of indoor courts will be one of the focus of this report. The location of the tennis courts will also be a prime factors of how involved people are to this sport. We will also examine whether all the tennis courts are packed in a certain area or they are evenly distributed across Toronto. Other factors such as surface material, asset category, lights and primary permitting status will also be the aspects that we focus on in the discussion. 
 
-The data section will include how to retrieve the data and the tools that will be used to analyse the dataset. The variables and features of the data will also be discussed under the data section. The model will indicate whether there is a directly relationship between the number of indoor courts and the number of frequent tennis players. Tables and graphs will be presented under results. Detailed findings and future actions will then be included in discussion part and the lastly the rest of the material will go under appendix. 
+The data section will include how to retrieve the data and the tools that will be used to analyse the dataset. The variables and features of the data will also be discussed under the data section. The model will indicate whether there is a directly relationship between the asset category and the location of the tennis courts, we will use a linear regression model to examine their correlation. Tables and graphs will be presented under results. Detailed findings and future actions will then be included in discussion part and the lastly the rest of the material will go under appendix. 
 
 # Data
 
+## Data Summary
 
+The data for this resource is obtained from the portal of Open Data Toronto [@opendata]. The open data portal is an open sources that is entirely free for the general public and is really user friendly to developers. It contains a huge variety of data with different categories such as City Government, Locations and Mapping, Community Services, Transportation etc. The dataset contains information of every single tennis court in Toronto and the dataset is updated on a yearly basis. It was published by the Parks, Foresry & Recreation department [@portal]. There are 12 variables in the dataset including ID, name, tennis court area, park name, address, district, ward, primary permitting status, asset category, lights, surface material & GIS coordinate [@portal]. We will focus on a few variables in the following sections such as district where it can be used to set up a linear regression as the locations of the courts, primary permitting status to determine if the court is private or public, asset category to see if it belongs to clubhouse or outdoor court as most indoor tennis courts belong to clubhouse. Lights and surface material will also be the two variables we will look into as they are the key factors affecting the players experience.
 
+I find some of the variables really hard to study or analyze. For example park name and address are the variables that I think are relatively tough to discuss on because they do not tell that much of an information in general, using their district and ward would be a better option in general so the reader can have a more general picture if they are not familiar with Toronto. After examining all the variables, we will move on from there and compare our results with my personal experience to further extend our research.
 
 ```{r, echo=FALSE, warning=FALSE, show_col_types = FALSE}
 # get package
@@ -53,9 +57,21 @@ datastore_resources <- filter(resources, tolower(format) %in% c('xlsx', 'geojson
 # load the first datastore resource as a sample
 data <- filter(datastore_resources, row_number()==1) %>% get_resource()
 
+write_csv(
+  x=data,
+  file="../../input/toronto_tennis_courts.csv"
+)
 ```
 
-```{r, echo=FALSE, warning=FALSE, show_col_types = FALSE}
+## R Packages
+
+As we want to focus on the relationship between the location and the conditions of the tennis courts, we will investigate our dataset based on district, primary permitting status, asset category, lights, surface material and GIS coordinate. We will be using R [@citeR] throughout the whole research with the aid of different packages provided by R. All the codes and writings are produced with R markdown. 
+
+
+
+
+
+```{r, echo=FALSE, warning=FALSE, show_col_types = FALSE, inclue=FALSE}
 bbox_toronto <-
   c(left = -79.639,
     bottom = 43.5802,
@@ -65,12 +81,26 @@ bbox_toronto <-
 toronto_stamen_map <-
   get_stamenmap(bbox_toronto,maptype = "toner-lite")
 
-ggmap(toronto_stamen_map)
+coor <- data$`GIS Coordinate`
+coor <- str_sub(coor, 2, -2)
+coor_modify <- scan(text = coor, what = numeric(), sep = ",")
+long <- coor_modify[seq(1,length(coor_modify),2)]
+lat <- coor_modify[-seq(1,length(coor_modify),2)]
+
+tennis_map <- ggmap(toronto_stamen_map) +
+  geom_point(data=data,
+             aes(x = long, y = lat, color = "ele"),
+             size = 3) +
+  theme_map()
 ```
 
 # Model
 
 # Results
+```{r}
+tennis_map
+```
+
 
 # Discussion
 
