@@ -3,10 +3,13 @@ title: "Growing Demand for Tennis Courts in Toronto"
 author: "Basil Wong"
 thanks: 'Code and data are available at: https://github.com/basilwongg/TorTennisCourts'
 date: "`r format(Sys.time(), '%d %B %Y')`"
-abstract: "This report aims to investigate the tennis courts that belong to the City of Toronto, with tennis becoming one of the leading sports in Canada and more people have turned into a frequent player, do we have enough tennis courts to accommodate all the players. It discusses the tennis court area, primary permitting status (club or public), lit or not and surface material. Then compare it to the growing demand to see if the distribuition and number of tennis courts satify the needs of the players in Toronto.
+abstract: "This report aims to investigate the tennis courts that belong to the City of Toronto, with tennis becoming one of the leading sports in Canada and more people have turned into a frequent player, do we have enough tennis courts to accommodate all the players. It discusses the tennis court area, primary permitting status (club or public), lit or not and surface material. Then compare it to the growing demand to see if the distribution and number of tennis courts satisfy the needs of the players in Toronto.
   \\par
   \\textbf {Keywords:} toronto tennis courts, toronto tennis clubs, parks and recreation, locations and mapping, open data toronto,  toronto residents"
-output: pdf_document
+output: 
+  bookdown::pdf_document2:
+    toc: true
+    fig_caption: yes
 toc: FALSE
 bibliography: references.bib
 ---
@@ -44,7 +47,7 @@ The data for this resource is obtained from the portal of Open Data Toronto [@op
 
 I find some of the variables really hard to study or analyze. For example park name and address are the variables that I think are relatively tough to discuss on because they do not tell that much of an information in general, using their district and ward would be a better option in general so the reader can have a more general picture if they are not familiar with Toronto. After examining all the variables, we will move on from there and compare our results with my personal experience to further extend our research.
 
-```{r, echo=FALSE, warning=FALSE, show_col_types = FALSE}
+```{r, echo=FALSE, warning=FALSE, show_col_types = FALSE, include=FALSE}
 # get package
 package <- show_package("409119c3-65d7-4688-bcb7-5f74f6fb8415")
 
@@ -61,17 +64,77 @@ write_csv(
   x=data,
   file="../../input/toronto_tennis_courts.csv"
 )
+
+clean_data <- read_csv(
+  file="../../input/toronto_tennis_courts.csv"
+)
+
+names(clean_data) <- c('ID', 'name', 'area', 'park_name', 'address', 'district', 'ward', 'status', 'category', 'lights', 'surface', 'coordinate')
 ```
 
 ## R Packages
 
-As we want to focus on the relationship between the location and the conditions of the tennis courts, we will investigate our dataset based on district, primary permitting status, asset category, lights, surface material and GIS coordinate. We will be using R [@citeR] throughout the whole research with the aid of different packages provided by R. All the codes and writings are produced with R markdown. 
+As we want to focus on the relationship between the location and the conditions of the tennis courts, we will investigate our dataset based on district, primary permitting status, asset category, lights, surface material and GIS coordinate. We will be using R [@citeR] throughout the whole research with the aid of different packages provided by R. All the codes and writings are produced with R markdown. The package **opendatatoronto** [@opendata] is used to extract data from the open data Toronto portal which is the main package we will be using for our research, the raw data set is retrieved by obtaining the specific package from the open data portal. The package **haven** [@haven] is used to enable R to read and write various data format that is used by other R packages, it is also part of the tidyverse package. Package **tidyverse** [@tidyverse] is used as a function to help us obtain and tidy the data, it is very useful because we always wanted to clean up the data before analyzing it. **dplyr** [@dplyr] is used for data manipulation focusing on data frames, **tidyverse** [@tidyverse] is used for data exploration and visualization, **janitor** [@janitor], **tidyr** [@tidyr] and **lubridate** [@lubridate] are used for cleaning the data set so the developer can analyze the data in a more organized way while **ggplot2** [@ggplot], **gridExtra** [@gridExtra] and **scales** [@scales] are the most important packages because they are used to generate graphs and table in order for us to present our findings. We also make use the packages **ggmap** [@ggmap] & **ggthemes** [@ggthemes] to construct the map of Toronto and plot our courts' location.
 
 
 
 
+# Model
 
-```{r, echo=FALSE, warning=FALSE, show_col_types = FALSE, inclue=FALSE}
+In order to find out the relationship between the location of tennis courts and other variables, I decided to use a chi-squared test: $$\chi^2 = \sum \frac {(O - E)^2}{E}$$ to evaluate how likely it is that we will observe something difference between sets. We will run the model couple times on lights, surface and category. We will look through the results and investigate their relationships before we derive to our conclusion. \
+
+```{r, echo=FALSE, warning=FALSE, show_col_types = FALSE}
+temp_table <- table(clean_data$district, clean_data$lights)
+location <- prop.table(temp_table,1)
+
+temp_table1 <- table(clean_data$district, clean_data$category)
+cate <- prop.table(temp_table1,1)
+
+temp_table2 <- table(clean_data$district, clean_data$surface)
+sur <- prop.table(temp_table2,1)
+
+result <- chisq.test(clean_data$district, clean_data$lights)
+result
+
+result2 <- chisq.test(clean_data$district, clean_data$category)
+result2
+
+result3 <- chisq.test(clean_data$district, clean_data$surface)
+result3
+```
+
+```{r light, echo=FALSE, warning=FALSE, show_col_types = FALSE}
+location %>% 
+  kable(caption = "Proportion of tennis courts with and without lights in different districts",
+      booktabs = TRUE, 
+      linesep = "",
+      format.args = list(big.mark = ","))
+```
+
+```{r tab2, echo=FALSE, warning=FALSE, show_col_types = FALSE}
+cate %>%
+  kable(caption = "Proportion of tennis courts in different categories in different districts",
+      booktabs = TRUE, 
+      linesep = "",
+      format.args = list(big.mark = ","))
+```
+
+```{r tab3, echo=FALSE, warning=FALSE, show_col_types = FALSE}
+sur %>%
+  kable(caption = "Proportion of tennis courts of different surface in different districts",
+      booktabs = TRUE, 
+      linesep = "",
+      format.args = list(big.mark = ","))
+
+```
+
+From the Chi-square result, it is obvious all 3 chi-squared test have p-value less than 0.05, which means that all variables are independent with districts, so they is no direct relationship between the variables. Then we can take a look at the proportional tables, in Table \@ref(tab:light), we can notice that in all the districts, the percentage of tennis courts with lights are higher than the percentage of tennis courts without light, therefore we would like to look into this part later and see how many of them are public courts and how many of them are private courts. In table \@ref(tab:tab2), we can observe that the number of outdoor tennis courts in Toronto takes up more than 90% of the total court, which means that there are only 10% of the courts that are indoor. Therefore it reflects that close to 90% of the courts are not functioning in the winter when snow covers the courts. Then in Table \@ref(tab:tab3), the majority of the courts are covered with Asphalt, the number of courts covered with clay and coated are relatively small because clay and coated courts generally require regular maintenance and those courts are often owned by private clubhouse. It is interesting that in Scarborough 70% of the courts are coated, we will look into this in a moment.
+
+
+# Results
+
+## Toronto Tennis Courts Distribution
+```{r echo=FALSE, warning=FALSE, show_col_types = FALSE, inclue=FALSE, message=FALSE}
 bbox_toronto <-
   c(left = -79.639,
     bottom = 43.5802,
@@ -81,29 +144,244 @@ bbox_toronto <-
 toronto_stamen_map <-
   get_stamenmap(bbox_toronto,maptype = "toner-lite")
 
-coor <- data$`GIS Coordinate`
+coor <- clean_data$coordinate
 coor <- str_sub(coor, 2, -2)
 coor_modify <- scan(text = coor, what = numeric(), sep = ",")
 long <- coor_modify[seq(1,length(coor_modify),2)]
 lat <- coor_modify[-seq(1,length(coor_modify),2)]
 
 tennis_map <- ggmap(toronto_stamen_map) +
-  geom_point(data=data,
+  geom_point(data=clean_data,
              aes(x = long, y = lat, color = "ele"),
              size = 3) +
   theme_map()
 ```
 
-# Model
-
-# Results
-```{r}
+```{r dist, fig.cap="Tennis courts distribution", echo=FALSE, warning=FALSE, show_col_types = FALSE}
 tennis_map
 ```
 
+We will like to see if the tennis courts in Toronto are evenly distributed, therefore we produced a map of Toronto and we plot all the locations of the tennis court on the map. From figure \@ref(fig:dist), we can notice that the locations of the tennis court are actually pretty evenly distributed, some of the areas might have higher tennis courts density but the overall patterns showed that most area should have the approximately same density. However I observed that the number of tennis courts in downtown Toronto has a significant drop but that is also in my expectation because downtown Toronto is a business center therefore the buildings are so crowded and packed. Also from this map we cannot tell the exact number of courts because some locations have more than 1 court so it requires further analyze, it only provides a brief outline of where the tennis courts are located at.
+
+## Surface Material
+
+```{r surfmap, fig.cap="tennis court surface", echo=FALSE, warning=FALSE, show_col_types = FALSE,fig.height=4}
+clean_data %>%
+  drop_na(surface) %>%
+  ggplot(mapping = aes(x=surface)) + 
+  geom_histogram(stat= 'count', color="darkblue", fill="lightblue") +
+  theme(axis.text.x = element_text(size = 10)) +
+  labs(x="Surface Material")
+```
+
+From (figure \@ref(fig:surfmap)), the number of tennis courts with asphalt surface is more than 300 with coated courts being around 230. Then we can notice that the number of clay courts and concrete courts are less than 30. Generally players think that concrete courts are the least comfortable and coated court being the most comfortable. Asphalt should be the most common material for tennis court around the world because it is easy to maintain and relatively cheap compared to coated and clay courts. It is pretty often that people confuse asphalt with concrete court, with this table we know that concrete courts are actually very rare in Toronto. It is also very dangerous for kids to play on concrete courts because they might be serious injuried if they have a bad fall on the court. 
+
+## Category
+
+```{r category, fig.cap="Tennis court category",echo=FALSE, warning=FALSE, show_col_types = FALSE, fig.height=4}
+clean_data %>%
+  drop_na(category) %>%
+  ggplot(mapping = aes(x=category)) + 
+  geom_histogram(stat= 'count', color="red", fill="pink") +
+  theme(axis.text.x = element_text(size = 10)) +
+  labs(x="Tennis Court Category")
+```
+
+For the tennis court category in figure \@ref(fig:category), it is divided into outdoor tennis court and clubhouse, what it actually means here is outdoor and indoor tennis court. Some of the outdoor tennis courts are also under the management of private clubhouses. There are close to 600 outdoor tennis courts in Toronto mean while there are only less than 50 indoor courts. The ratio of outdoor and indoor tennis courts is obviously not balanced. \
+
+```{r echo=FALSE, warning=FALSE, show_col_types = FALSE}
+num_status <- 
+  clean_data[,c(2,8)] %>%
+  drop_na(status) %>%
+  group_by(status) %>%
+  summarise(n = n()) 
+  
+```
+
+```{r status, echo=FALSE, warning=FALSE, show_col_types = FALSE}
+num_status %>%
+  kable(caption = "Number of different types of tennis courts in Toronto",
+      booktabs = TRUE, 
+      linesep = "",
+      format.args = list(big.mark = ","))
+```
+
+Also from table \@ref(tab:status), there are 285 courts belong to club and 337 courts belong to the Toronto government. It means that nearly 40% of the tennis courts we have in Toronto are not opened to the public and only people who have paid for the membership fees of those clubs will have access. Combining the result with figure \@ref(fig:category), we can notice that the number of indoor public courts is close to none which means that people in the public has no way to access tennis courts in the winter and that will seriously affect their practices.
+
+## District
+
+```{r location, fig.cap="Tennis court location",echo=FALSE, warning=FALSE, show_col_types = FALSE, fig.height=5.5}
+clean_data %>%
+  drop_na(district) %>%
+  ggplot(mapping = aes(x=district)) + 
+  geom_histogram(stat= 'count', color="yellow", fill="yellow") +
+  theme(axis.text.x = element_text(size = 10)) +
+  labs(x="Tennis Court Location")
+
+```
+
+With reference to figure \@ref(fig:location), we can see that there are close to 200 tennis courts in Etobicoke York while North York has approximately 230-240 tennis courts which is the highest among all the districts. Then Scarborough and Toronto East York both have around 80-100 tennis courts each in that district. Lastly we can notice that waterfront has around 25 tennis courts in total. With this information we can tell that Etobicoke York and North York has more tennis courts than the rest of the districts. The number of tennis courts in North York alone is almost the same as the total of Scarborough, Toronto East York and Waterfront. Therefore it contradicts our observation in figure \@ref(fig:dist) and we will talk about it in our discussion section.
 
 # Discussion
 
+## Light
+
+Based on our results, we are able to find out a few interesting points that might reflect the current situation of tennis players in Toronto. First of all, we can see that in most districts, 70% of the tennis courts are equipped with lights which is really exciting to see because it will allow the players to continue playing even after sunset. Most people have to go to work during the day time so it would be really convenient for them if there is light so they can work out when they get off work. Moreover the average sunset time in the winter is around 4pm, leaving tennis players a really short period of time to play or practice, therefore the high percentage of lights in the tennis courts definitely help promote the sports.
+
+## Lack of Indoor Public Courts
+
+Next we will discuss the distribution of public and private tennis courts in Toronto. In our previous section, we already found out that there are a total of 337 public courts and 285 private courts. Among those courts, nearly 600 of them are outdoor. So basically there are only 100 indoor courts available in Toronto. With the growing number of tennis players and growing demand of tennis courts, I can guarantee that 100 courts are not enough to accommodate all the players. Therefore it would be a major concern especially in the winter and I think if the government really want to promote this sports, they will have to fix the problems of lack of indoor courts for the public. Furthermore the number of public courts are experiencing a high usage in Spring and Summer. Lots of the courts are already in bad conditions, however it seems that the government is not spending much effort on improving it. 
+
+## Court Surface Material
+
+The surface material of the tennis court will also be a major concern for tennis players. Out of all the surfaces we have in Toronto, concrete should be the worst surface because of its unevenness, the balls will bounce around and players are really hard to track and hit the balls properly. With asphalt being the most common surface in Toronto, it is definitely good enough for entry and intermediate level players. Balls will not bounce around without patterns and players should be able to enjoy their games. There are also quite a few coated tennis courts, coated courts are generally better than asphalt, the technology they used are meant for competitive level. However these types of courts are usually owned by private clubs so members of the public most likely will not have a chance to access. If the government is willing to improve the court surface, I am sure that more people will be motivated.
+
+## Court Distribution
+
+Lastly we will talk about the court distribution in Toronto, with our graphs and maps, we can notice that the locations of the tennis courts are pretty spread out expect for downtown Toronto. I understand that it is hard to build a lot of tennis courts in downtown because of the building density and financial district, however it is really inconvenient for people who lives in downtown if they ever want to play tennis. Also if we look into the actual data of the number of courts, we will see that the number of courts are actually not evenly distributed, some of the districts have relatively less number of tennis courts. 
+
+\newpage
 # Appendix
+
+Extract of the questions from @gebru2021datasheets
+
+
+**Motivation**
+
+1. *For what purpose was the dataset created? Was there a specific task in mind? Was there a specific gap that needed to be filled? Please provide a description.*
+    - The dataset was created to analyze the tennis court demand in Toronto. We found a dataset on the open data Toronto protal.
+2. *Who created the dataset (for example, which team, research group) and on behalf of which entity (for example, company, institution, organization)?*
+    - Parks, Forestry & Recreation Department
+3. *Who funded the creation of the dataset? If there is an associated grant, please provide the name of the grantor and the grant name and number.*
+    - City of Toronto Government
+4. *Any other comments?*
+    - NA
+
+**Composition**
+
+1. *What do the instances that comprise the dataset represent (for example, documents, photos, people, countries)? Are there multiple types of instances (for example, movies, users, and ratings; people and interactions between them; nodes and edges)? Please provide a description.*
+	- The dataset represents the different properties of each tennis court in Toronto
+2. *How many instances are there in total (of each type, if appropriate)?*
+	- 12
+3. *Does the dataset contain all possible instances or is it a sample (not necessarily random) of instances from a larger set? If the dataset is a sample, then what is the larger set? Is the sample representative of the larger set (for example, geographic coverage)? If so, please describe how this representativeness was validated/verified. If it is not representative of the larger set, please describe why not (for example, to cover a more diverse range of instances, because instances were withheld or unavailable).*
+	- Yes, it contain all possible instances
+4. *What data does each instance consist of? "Raw" data (for example, unprocessed text or images) or features? In either case, please provide a description.*
+	- Raw data with 12 variables
+5. *Is there a label or target associated with each instance? If so, please provide a description.*
+	- Yes, namely ID, name, tennis court area, park name, address, district, ward, primary permitting status, asset category, lights, surface material and GIS coordinate
+6. *Is any information missing from individual instances? If so, please provide a description, explaining why this information is missing (for example, because it was unavailable). This does not include intentionally removed information, but might include, for example, redacted text.*
+	- No
+7. *Are relationships between individual instances made explicit (for example, users' movie ratings, social network links)? If so, please describe how these relationships are made explicit.*
+	- No
+8. *Are there recommended data splits (for example, training, development/validation, testing)? If so, please provide a description of these splits, explaining the rationale behind them.*
+	- No
+9. *Are there any errors, sources of noise, or redundancies in the dataset? If so, please provide a description.*
+	- No
+10. *Is the dataset self-contained, or does it link to or otherwise rely on external resources (for example, websites, tweets, other datasets)? If it links to or relies on external resources, a) are there guarantees that they will exist, and remain constant, over time; b) are there official archival versions of the complete dataset (that is, including the external resources as they existed at the time the dataset was created); c) are there any restrictions (for example, licenses, fees) associated with any of the external resources that might apply to a dataset consumer? Please provide descriptions of all external resources and any restrictions associated with them, as well as links or other access points, as appropriate.*
+	- No
+11. *Does the dataset contain data that might be considered confidential (for example, data that is protected by legal privilege or by doctor-patient confidentiality, data that includes the content of individuals' non-public communications)? If so, please provide a description.*
+	- No
+12. *Does the dataset contain data that, if viewed directly, might be offensive, insulting, threatening, or might otherwise cause anxiety? If so, please describe why.*
+	- No
+13. *Does the dataset identify any sub-populations (for example, by age, gender)? If so, please describe how these subpopulations are identified and provide a description of their respective distributions within the dataset.*
+	- No
+14. *Is it possible to identify individuals (that is, one or more natural persons), either directly or indirectly (that is, in combination with other data) from the dataset? If so, please describe how.*
+	- No
+15. *Does the dataset contain data that might be considered sensitive in any way (for example, data that reveals race or ethnic origins, sexual orientations, religious beliefs, political opinions or union memberships, or locations; financial or health data; biometric or genetic data; forms of government identification, such as social security numbers; criminal history)? If so, please provide a description.*
+	- No
+16. *Any other comments?*
+	- No
+
+**Collection process**
+
+1. *How was the data associated with each instance acquired? Was the data directly observable (for example, raw text, movie ratings), reported by subjects (for example, survey responses), or indirectly inferred/derived from other data (for example, part-of-speech tags, model-based guesses for age or language)? If the data was reported by subjects or indirectly inferred/derived from other data, was the data validated/verified? If so, please describe how.*
+	- The data was directly observable
+2. *What mechanisms or procedures were used to collect the data (for example, hardware apparatuses or sensors, manual human curation, software programs, software APIs)? How were these mechanisms or procedures validated?*
+	- Dataset has gone through necessary inter-divisional validation and on-site validation with parks supervisors
+3. *If the dataset is a sample from a larger set, what was the sampling strategy (for example, deterministic, probabilistic with specific sampling probabilities)?*
+	- NA
+4. *Who was involved in the data collection process (for example, students, crowdworkers, contractors) and how were they compensated (for example, how much were crowdworkers paid)?*
+	- Employees from City of Toronto Parks, Forestry & Recreation Asset Management System
+5. *Over what timeframe was the data collected? Does this timeframe match the creation timeframe of the data associated with the instances (for example, recent crawl of old news articles)? If not, please describe the timeframe in which the data associated with the instances was created.*
+	- NA
+6. *Were any ethical review processes conducted (for example, by an institutional review board)? If so, please provide a description of these review processes, including the outcomes, as well as a link or other access point to any supporting documentation.*
+	- NA
+7. *Did you collect the data from the individuals in question directly, or obtain it via third parties or other sources (for example, websites)?*
+	- NA
+8. *Were the individuals in question notified about the data collection? If so, please describe (or show with screenshots or other information) how notice was provided, and provide a link or other access point to, or otherwise reproduce, the exact language of the notification itself.*
+	- NA
+9. *Did the individuals in question consent to the collection and use of their data? If so, please describe (or show with screenshots or other information) how consent was requested and provided, and provide a link or other access point to, or otherwise reproduce, the exact language to which the individuals consented.*
+	- NA
+10. *If consent was obtained, were the consenting individuals provided with a mechanism to revoke their consent in the future or for certain uses? If so, please provide a description, as well as a link or other access point to the mechanism (if appropriate).*
+	- NA
+11. *Has an analysis of the potential impact of the dataset and its use on data subjects (for example, a data protection impact analysis) been conducted? If so, please provide a description of this analysis, including the outcomes, as well as a link or other access point to any supporting documentation.*
+	- NA
+12. *Any other comments?*
+	- NA
+
+**Preprocessing/cleaning/labeling**
+
+1. *Was any preprocessing/cleaning/labeling of the data done (for example, discretization or bucketing, tokenization, part-of-speech tagging, SIFT feature extraction, removal of instances, processing of missing values)? If so, please provide a description. If not, you may skip the remaining questions in this section.*
+	- NA
+2. *Was the "raw" data saved in addition to the preprocessed/cleaned/labeled data (for example, to support unanticipated future uses)? If so, please provide a link or other access point to the "raw" data.*
+	- TBD
+3. *Is the software that was used to preprocess/clean/label the data available? If so, please provide a link or other access point.*
+	- TBD
+4. *Any other comments?*
+	- TBD
+
+**Uses**
+
+1. *Has the dataset been used for any tasks already? If so, please provide a description.*
+	- No
+2. *Is there a repository that links to any or all papers or systems that use the dataset? If so, please provide a link or other access point.*
+	- No
+3. *What (other) tasks could the dataset be used for?*
+	- NA
+4. *Is there anything about the composition of the dataset or the way it was collected and preprocessed/cleaned/labeled that might impact future uses? For example, is there anything that a dataset consumer might need to know to avoid uses that could result in unfair treatment of individuals or groups (for example, stereotyping, quality of service issues) or other risks or harms (for example, legal risks, financial harms)? If so, please provide a description. Is there anything a dataset consumer could do to mitigate these risks or harms?*
+	- No, it is an open source so everyone can access it and perform analysis
+5. *Are there tasks for which the dataset should not be used? If so, please provide a description.*
+	- NA
+6. *Any other comments?*
+	- NA
+
+**Distribution**
+
+1. *Will the dataset be distributed to third parties outside of the entity (for example, company, institution, organization) on behalf of which the dataset was created? If so, please provide a description.*
+	- The dataset is an open source so everyone have access to it
+2. *How will the dataset be distributed (for example, tarball on website, API, GitHub)? Does the dataset have a digital object identifier (DOI)?*
+	- It is avaiable at https://open.toronto.ca/dataset/tennis-courts-facilities/
+3. *When will the dataset be distributed?*
+	- NA
+4. *Will the dataset be distributed under a copyright or other intellectual property (IP) license, and/or under applicable terms of use (ToU)? If so, please describe this license and/ or ToU, and provide a link or other access point to, or otherwise reproduce, any relevant licensing terms or ToU, as well as any fees associated with these restrictions.*
+	- NA
+5. *Have any third parties imposed IP-based or other restrictions on the data associated with the instances? If so, please describe these restrictions, and provide a link or other access point to, or otherwise reproduce, any relevant licensing terms, as well as any fees associated with these restrictions.*
+	- NA
+6. *Do any export controls or other regulatory restrictions apply to the dataset or to individual instances? If so, please describe these restrictions, and provide a link or other access point to, or otherwise reproduce, any supporting documentation.*
+	- NA
+7. *Any other comments?*
+	- NA
+
+**Maintenance**
+
+1. *Who will be supporting/hosting/maintaining the dataset?*
+	- Parks, Forestry & Recreation
+2. *How can the owner/curator/manager of the dataset be contacted (for example, email address)?*
+	- opendata@toronto.ca
+3. *Is there an erratum? If so, please provide a link or other access point.*
+	- NA
+4. *Will the dataset be updated (for example, to correct labeling errors, add new instances, delete instances)? If so, please describe how often, by whom, and how updates will be communicated to dataset consumers (for example, mailing list, GitHub)?*
+	- The dataset is updated once a year
+5. *If the dataset relates to people, are there applicable limits on the retention of the data associated with the instances (for example, were the individuals in question told that their data would be retained for a fixed period of time and then deleted)? If so, please describe these limits and explain how they will be enforced.*
+	- NA
+6. *Will older versions of the dataset continue to be supported/hosted/maintained? If so, please describe how. If not, please describe how its obsolescence will be communicated to dataset consumers.*
+	- No, they only provide the latest version of the datset
+7. *If others want to extend/augment/build on/contribute to the dataset, is there a mechanism for them to do so? If so, please provide a description. Will these contributions be validated/verified? If so, please describe how. If not, why not? Is there a process for communicating/distributing these contributions to dataset consumers? If so, please provide a description.*
+	- Yes, they can reproduce and extend the dataset. By accessing https://open.toronto.ca/dataset/tennis-courts-facilities/ they can locate the part for developers where codes can be obtained in order to extend the dataset
+8. *Any other comments?*
+	- NA
+
+
+\newpage
 
 # Reference
